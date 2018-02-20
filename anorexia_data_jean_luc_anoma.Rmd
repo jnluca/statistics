@@ -1,0 +1,151 @@
+---
+title: "Jean Luc ANOMA - Données annorie"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+ano = read.table(file= "DonneesAnorexie.txt", header=TRUE, sep ="\t")
+ano[,2:3]=ano[,2:3]*0.453
+ano$ecart = ano$post - ano$pre
+attach(ano)
+cont = ano[trait=="Cont",]
+cbt = ano[trait=="CBT",]
+ft = ano[trait=="FT",]
+```
+### **1. Les groupes de patients sont hétérogènes au départ**
+#### **a. Le groupe suivant une thérapie familiale est sous-représenté**
+  Le diagramme en bâtons ci-dessus fait ressortir une disparité significative dans les effectifs des groupes de patients. Notamment, le groupe "Thérapie Familiale" (FT) est sous-représenté avec 17 patients seulement, contre 29 pour le groupe "Cognitive Behavioural Treatment" (CBT), soit 41% de patients en moins. En revanche le groupe de contrôle (cont) et le groupe CBT ont des effectifs relativement proches (26 et 29 respectivement).
+  
+  ```{r, echo=FALSE}
+effectifs = c(nrow(cont),nrow(cbt),nrow(ft))
+barplot(effectifs, names.arg = c("Cont","CBT", "FT"))
+```
+
+  Les résultats n'auront donc pas la même robustesse pour les différents groupes.
+  
+#### **b. La distribution du poids des patients est différente pour le groupe de contrôle**
+  Les 2 histogrammes ci-dessous montrent que les groupes FT et CBT présentent une distribution très proche concernant le poids initial des patients.
+  
+```{r, echo=FALSE}
+hist(ft$pre, freq=FALSE)
+```
+```{r, echo=FALSE}
+hist(cbt$pre, freq=FALSE)
+```
+  
+  Cela est confirmé par le QQplot ci-dessus qui compare la distribution du poids au sein de ces 2 groupes. Les point s'alignent relativement bien le long de la diagonale.
+  
+  ```{r, echo=FALSE}
+qqplot(cbt$pre,ft$pre)
+abline(0,1)
+```  
+  
+  Malheureusement, la distribution du poids des patients est significativement différente entre le groupe de contrôle et les deux autres groupes. En effet, le sous-groupe des patients pesant 36 à 38 kg, par exemple, qui est le mode dans les groupes FT et CBT, est comparativement sous-représenté dans le groupe de contrôle:
+  
+  
+  Les QQplot entre le groupe de contrôle et chacun des 2 autres groupes montre bien cette différence dans la distribution du poids des patients:
+  
+  ```{r, echo=FALSE}
+qqplot(cont$pre,ft$pre)
+abline(0,1)
+```  
+  ```{r, echo=FALSE}
+qqplot(cont$pre,cbt$pre)
+abline(0,1)
+```
+
+### **2. Dans ce contexte, la comparaison du poids des patients à la fin de l'étude a peu de sens**
+  En effet une simple comparaison de la distribution du poids des patients à la fin de l'étude ne permettra pas de conclure sur l'efficacité relative des différents traitements. Il aurait fallu avoir des groupes homogènes au départ pour pouvoir isoler l'effet des traitements. Ici, nous ne pouvons donc pas isoler l'effet du traitement choisi en comparant simplement le poids des patients à la fin de l'étude.
+  
+  Dans ce contexte, les variations de poids sont davantage pertinentes car elles prennent en compte l'hétérogénéité des groupes au début de l'étude. Il s'agit d'une meilleure approche, mais pas de l'approche idéale car il est possible que la prise/perte relative de poids dépende également du poids initial du patient. L'idéal pour une approche descriptive aurait été que les groupes de patients soient homogènes au début de l'étude.
+
+### **3. L'évolution du poids des patients dans le groupe de contrôle est plutôt négative**
+  Afin d'étudier l'évolution du poids des patients, nous introduisons et étudions une nouvelle variable, nommée "ecart", qui vaut "poids final - poids initial".
+
+  Dans le groupe de contrôle, la médiane et la moyenne de la variable "ecart" correspondent toutes deux à une perte de poids d'environ 200 grammes. Cependant, comme le montre la boîte à moustache suivante sur la variable "ecart", le 3ème quartile est à 1,6kg de gain de poids alors que le 1er quartile est 3kg de perte de poids. Cela signifie que la grande majorité des patients soit perd du poids soit en prend très modérément. On observe quelques prises de poids relativement élevées par rapport au reste des patients, ce qui permet à la moyenne de se maintenir proche de zéro.
+  
+```{r, echo=FALSE}
+boxplot(cont$ecart)
+```  
+
+L'histogramme portant sur la variable "ecart" ci-dessous confirme les observations ci-dessus à savoir la présence de quelques observations de prise de poids relativement élevées et une large majorité des patients dont l'état stagne ou se dégrade:
+
+```{r, echo=FALSE}
+hist(cont$ecart, freq=FALSE)
+```  
+  
+  Il est à remarquer que `r as.integer(sum(cont$ecart<0.0)*100/length(cont$ecart))`% des patients perd du poids.
+  
+### **4. La Thérapie Familiale semble être la plus efficace**
+Le groupe CBT présente une moyenne de prise de poids à 1,3kg et une médiane à 0,6kg contre respectivement 3,3kg et 4,1kg pour le groupe FT. Par ailleurs, tous les quartile la variable "ecarts" sont supérieurs au sein du groupe FT par rapport aux deux autres groupes comme le montre les boîtes à moustaches ci-dessous.
+
+```{r, echo=FALSE}
+plot(ecart~trait)
+``` 
+
+Par ailleurs seuls `r as.integer(sum(ft$ecart<0.0)*100/length(cont$ecart))`% des patients du groupe FT perdent du poids contre `r as.integer(sum(cbt$ecart<0.0)*100/length(cont$ecart))`% pour le groupe CBT et `r as.integer(sum(cont$ecart<0.0)*100/length(cont$ecart))`% pour le groupe de contrôle.
+
+La "Thérapie Familiale" semble donc être le traitement le plus efficace à la lumière de cette analyse car davantage d'individus prennent du poids et ils en prennent plus.
+
+### **5. Des distributions ayant des formes très disparates d'un groupe à l'autre et d'une variable à l'autre**
+  Concernant la variable "Pre" qui modélise la masse des patients avant le traitement, nous avions signalé la singularité de la distribution du groupe de contrôle. Les graphes ci-dessous confirment cette singularité. La distribution n'est pas symétrique par rapport à la moyenne. Concernant les groupes CBT et FT, les graphes ci-dessous montrent une adéquation raisonnable avec une distribution gaussienne, à ceci près que les distributions semblent moins plates qu'une distribution normale.
+  
+  S'agissant de la variable "Post", qui modélise la masse des patients après le traitement, les distributions sont très différentes d'un groupe à l'autre. Pour le groupe de contrôle, l'hypothèse d'une distribution normale semble plus plausible que pour les deux autres groupes. L'adéquation est très forte à gauche de la valeur moyenne et un peu moins à droite. Cela peut être dû à la faible taille de l'échantillon. Concernant le groupe CBT, les valeurs ne sont pas symétriques par rapport à la moyenne. Le groupe FT présente une queue lourde à gauche et très peu de valeurs entre la moyenne et les valeurs minimales, avec un "creux" à gauche de la moyenne. Rappelons cependant que le groupe FT est celui qui présente le moins d'individus et que ce creux peut être explicable par le faible effectif.
+  
+  Enfin, concernant la variable "Ecart", Le groupe de contrôle présente deux modes sur l'histogramme (en termes d'intervalles) et est peu symétrique par rapport à sa moyenne. Les groupes CBT et FT présentent également des distributions asymétriques.
+
+```{r, echo=FALSE}
+labs = c("Pre","Post","Ecart")
+par(mfrow = c(3, 3))
+for (i in c("Cont", "CBT", "FT")) {
+  for (j in c(2, 3, 4)){
+    mu <- mean(ano[trait==i,j])
+    sig <- sd(ano[trait==i,j])
+    hist(ano[trait==i,j],freq=FALSE, breaks=10, main = paste("Histogram of", labs[j-1]), xlab = i)
+    curve(dnorm(x,mu,sig),add=TRUE)
+  }
+}
+```   
+  
+  En combinant cette analyse avec l'observation des QQ-plots permettant de comparer les quantiles des variables de notre modèle avec ceux d'une loi normale, il apparaît que les meilleurs candidats pour l'utilisation d'une loi normale sont la variable "Pre" pour le groupe FT et la variable Post pour le groupe de contrôle.
+  
+  Au regard des QQ-plot, l'hypothèse d'une modélisation par une loi normale ne peut être exclue pour les autres cas car les points s'alignent relativement bien le long de la première bissectrice. 
+  
+  Quelques exceptions sont à signaler cependant, à savoir la variable "Post" pour le groupe FT et la variable "Ecart" pour le groupe CBT. Dans ces deux derniers cas, une distribution normale semble être une mauvaise candidate. Enfin, les histogrammes présentés ci-dessus suggèrent également une faible adéquation avec la distribution normale pour les variables "Pre" et "Ecart" du le groupe de contrôle. Cependant le QQ-plot et la comparaison des fonction de répartition incitent à la prudence et suggèrent qu'il est encore prématuré de rejeter l'hypothèse de la distribution normale.
+  
+  ```{r, echo=FALSE}
+labs = c("Pre","Post","Ecart")
+par(mfrow = c(3, 3))
+for (i in c("Cont", "CBT", "FT")) {
+  for (j in c(2, 3, 4)){
+    vect = ano[trait==i,j]
+    mu <- mean(vect)
+    sig <- sd(vect)
+    vect_std = (vect - mu)/sig
+    qqnorm(vect_std,main = paste("QQNorm of", labs[j-1]), xlab = i)
+    abline(0,1)
+  }
+}
+```   
+
+Les graphiques ci-dessous comparent, pour chaque cas, la fonction de répartition empirique avec la fonction de répartition d'une loi normale (en rouge). Ce graphique vient renforcer les conclusions énumérées plus haut.
+
+
+  ```{r, echo=FALSE}
+labs = c("Pre","Post","Ecart")
+par(mfrow = c(3, 3))
+for (i in c("Cont", "CBT", "FT")) {
+  for (j in c(2, 3, 4)){
+    vect = ano[trait==i,j]
+    mu <- mean(vect)
+    sig <- sd(vect)
+    Fn2 <- ecdf(vect)
+    plot(Fn2, xlim= c(min(vect), max(vect)))
+    lines(seq(min(vect), max(vect), by=0.5), pnorm(seq(min(vect), max(vect), by=.5),mu,sig), col=2)
+  }
+}
+```  

@@ -1,0 +1,162 @@
+---
+title: "Jean Luc ANOMA - Devoir 3 - Données Ozone"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pander)
+```
+
+```{r, echo=FALSE}
+oz = read.table('ozone.txt',header=T)
+oz$vent <- as.factor(oz$vent)
+oz$pluie <- as.factor(oz$pluie)
+attach(oz)
+```
+### **Analyse de la variance**
+#### **Représentations graphiques**
+  
+  ```{r, echo=FALSE}
+par(mfrow=c(2,1))
+with(oz,interaction.plot(vent,pluie,maxO3))
+with(oz,interaction.plot(pluie,vent,maxO3))
+```
+
+L'effet pluie est clair: le temps sec est clairement lié à des concentrations plus élevées en ozone. En revanche, l'effet vent n'est pas clair.
+  
+```{r, echo=FALSE}
+boxplot(maxO3~vent,data=oz, xlab='vent')
+boxplot(maxO3~pluie,data=oz, xlab='pluie')
+```
+  
+Les Boxplot confirment l'effet pluie, mais l'effet vent reste peu clair.
+
+
+#### **Analyse du modèle avec la variable "vent"**
+  
+  ```{r, echo=FALSE, results='asis'}
+modvent <- lm(maxO3~vent,data=oz)
+pander(summary(modvent))
+```  
+  
+Ici la référence est la valeur "ventEst" du facteur vent. Le coefficient correspondant à la valeur "vent-Est" est clairement significatif.
+
+La p-value du test d'égalité des moyennes est élevée avec une valeur de  0,77 pour le niveau "vent-Sud". Donc, dans ce cas on ne peut pas rejeter l'hypothèse nulle correspondant à l'égalité des moyennes des niveaux "vent-Est" et "vent-Sud". Et étant donné le niveau élevé de la p-value, on peut suspecter que le coefficient pour le niveau "vent-Sud" n'est pas significativement différent du niveau de référence.
+
+Concernant le niveau "vent-Nord", on ne peut pas non plus rejeter l'hypothèse nulle au niveau habituel de 5% car la p_value est supérieure à 5%, bien que bien moins élevée que la précédente.
+
+Concernant le niveau "ventOuest", la p-value permet de rejeter l'égalité de la moyenne avec celle du niveau "vent-Est" au niveau habituel de 5% (mais pas au niveau 1%).
+
+
+#### **Analyse du modèle avec la variable "pluie"**
+
+  
+  ```{r, echo=FALSE}
+modpluie <- lm(maxO3~pluie,data=oz)
+pander(summary(modpluie))
+```  
+
+La référence est le niveau "Pluie" de la variable pluie. Le coefficient lié à ce niveau de la variable pluie est significatif car la p-value est négligeable. 
+
+Par ailleurs, la très faible p-value du test d'égalité des moyennes indique que la moyenne liée au niveau "Pluie-sec" est significativement différente de celle du niveau "pluie-pluie"
+
+
+#### **Analyse du modèle avec les variables "vent" et "pluie"**
+
+  ```{r, echo=FALSE}
+modvent_pluie <- lm(maxO3~vent*pluie, data= oz)
+pander(summary(modvent_pluie))
+```  
+
+La référence est le niveau "vent-Est/pluie". La p-value de l'ordre de 0,0001 indique que le coefficient lié à ce niveau est significatif.
+
+Cependant, les coefficients liés aux différents niveaux "vent-Nord/pluie", "vent-Ouest/pluie" et "vent-Sud/pluie" ne semblent pas être significativement différents du coefficient de référence. Dans tous les cas, le test ne permet pas d'écarter l'hypothèse d'égalité des moyennes pour ces niveaux avec la moyenne du niveau de référence.
+
+On peut rejeter l'hypothèse nulle pour le coefficient "temps Sec" au niveau habituel de 5%.
+
+Concernant les coefficients correspondant respectivement aux niveaux vent-Nord (ou vent-Ouest ou vent-Sud) combinés au niveau temps-sec, on ne peut rejeter l'hypothèse nulle. Cela signifie que l'on ne peut écarter l'hypothèse selon laquelle, par rapport au niveau de référence, seul le changement de temps (temps sec ou pluie) induit un impact significatif sur la teneur en ozone.
+
+#### **Tableau d'analyse de la variance pour le modèle avec la variable "vent"**
+
+
+  ```{r, echo=FALSE}
+pander(anova(modvent))
+```  
+
+On peut rejeter l'hypothèse d'absence d'effet lié au vent au niveau de 5% mais pas au niveau de 1% car la p-value est à 2,1%.
+
+
+#### **Tableau d'analyse de la variance pour le modèle avec la variable "pluie"**
+  ```{r, echo=FALSE}
+pander(anova(modpluie))
+```  
+
+Ici on voit clairement que l'effet lié au facteur pluie est significatif bien plus nettement que pour le facteur vent. En effet la p-value est très faible.
+
+
+#### **Tableau d'analyse de la variance pour le modèle avec les variables "vent" et "pluie"**
+
+  ```{r, echo=FALSE}
+pander(anova(modvent_pluie))
+detach()
+```  
+
+Le tableau d'analyse de la variance indique que l'on ne peut rejeter l'hypothèse nulle pour le test d'absence d'intéraction entre les 2 facteurs à un niveau acceptable. On doit donc envisager l'absence d'intéraction entre les facteurs vent et pluie.
+
+Cependant l'effet lié au facteur vent est significatif (même au niveau 1%) et l'effet lié à la pluie est encore plus nettement significatif avec une p-value extrêmement faible.
+
+
+  
+
+### **Sélection de variables**
+
+  ```{r, echo=FALSE}
+oz = oz[,-(12:13)]
+attach(oz)
+library(leaps)
+```  
+
+Procédure utilisée: on choisit pour chaque taille de modèle (y compris l'intercept) le meilleur modèle. Puis, selon chaque critére, il faut tracer un graphique pour visualiser et sélectionner un modèle parmi les finalistes.
+
+
+#### **Critère du R²**
+  
+```{r, echo=FALSE}
+choix = regsubsets(maxO3~., data = oz)
+resume.choix = summary(choix)
+taille = as.double(rownames(resume.choix$wh))+1
+plot(taille,resume.choix$r2, main = "R²")
+```  
+
+Comme attendu, le R² augmente avec le nombre de variables. Ce n'est donc pas un critère de choix fiable lorsqu'il faut chosir entre plusieurs modèles ayant des nombres de variables différents. Il est utile pour comparer des modèles ayant le même nombre de variables.
+
+#### **Critère du R² ajusté**
+
+```{r, echo=FALSE}
+plot(taille,resume.choix$adjr2, main = "R² ajusté")
+```  
+  
+Selon le critère du R² ajusté, il faut choisir, parmi les modèles finalistes, le modèle de taille 5 (y-compris l'intercept).
+
+#### **Critère du Cp de Mallows**
+
+```{r, echo=FALSE}
+plot(taille,resume.choix$cp, main = "Cp de Mallows")
+abline(0,1)
+```  
+
+Selon le critère du Cp de Mallows, les modèles admettant 4 variables ou plus sont susceptibles d'être sélectionnés.
+
+#### **Critère du BIC**
+
+```{r, echo=FALSE}
+plot(taille,resume.choix$bic, main = "BIC")
+detach()
+```  
+
+Selon le critère du BIC, les modèles à 4 ou 5 variables sont susceptibles d'êtres sélectionnés.
+
+**En conclusion**, le modèle finaliste à 4 ou 5 variables est celui qu'il faut choisir. Pour une taille de modèle donnée, les critères choisissent tous le même modèle. Pour le modèle à 4 variables, il s'agit du modèle contenant les variables suivantes : (Intercept, T12, Ne9, maxO3v). Pour le modèle à 5 variables il s'agit du modèle contenant les variables suivantes: (Intercept, T12, Ne9, Vx9, maxO3v).
+
+
